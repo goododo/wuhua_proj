@@ -1,0 +1,153 @@
+##trajectory_monocle2#######################
+.libPaths(c("/usr/local/lib/R/site-library","/usr/lib/R/site-library","/usr/lib/R/library"))
+setwd("/home/shpc_09/Han/hanscript/")
+load("Epi.rda")
+
+library(Seurat)
+library(dplyr)
+library(monocle)
+library(tidyr)
+library(patchwork)
+library(stringr)
+library("ggplot2")
+library(Hmisc)
+
+##数据准备和monocle3有区别
+meta <- Epi@meta.data
+exp <- Epi@assays$RNA@data
+## downsample
+set.seed(5)
+cells <- rownames(meta[meta$cluster == 'Epi',])
+downsample_cells <- as.vector(sample_n(as.data.frame(cells), 5000,replace = FALSE)$cells)
+exp_data_down <- exp[,c(downsample_cells)]
+meta_data_down <- meta[c(downsample_cells),]
+genes <- as.data.frame(rownames(exp))
+colnames(genes)<-"gene_short_name"
+rownames(genes) <- genes$gene_short_name
+pd <- new("AnnotatedDataFrame", data = meta_data_down)	
+fd <- new("AnnotatedDataFrame", data = genes)
+HSMM <- newCellDataSet(exp_data_down,
+                       phenoData = pd,
+                       featureData = fd,
+                       lowerDetectionLimit = 0.5,
+                       expressionFamily = negbinomial.size())
+
+
+HSMM <- estimateSizeFactors(HSMM)
+HSMM <- estimateDispersions(HSMM)
+
+#选择不同的基因集，拟时分析的结果不同，实践中可以几种方法都试一下
+##使用clusters差异表达基因
+diff.genes <- read.csv('myeloid_markers.xls',sep="\t")
+diff.genes <-diff.genes[str_detect(diff.genes$cluster,"cDC"),]
+diff.genes <- subset(diff.genes,p_val_adj<0.01)$gene
+mycds <- setOrderingFilter(HSMM, diff.genes)
+p1 <- plot_ordering_genes(mycds)
+##使用seurat选择的高变基因
+var.genes <- VariableFeatures(DC)
+mycds <- setOrderingFilter(mycds, var.genes)
+p2 <- plot_ordering_genes(mycds)
+##使用monocle选择的高变基因
+disp_table <- dispersionTable(HSMM)
+disp.genes <- subset(disp_table, mean_expression >= 0.1 & dispersion_empirical >= 1 * dispersion_fit)$gene_id
+mycds <- setOrderingFilter(HSMM, disp.genes)
+p3 <- plot_ordering_genes(mycds)
+##结果对比
+p1|p2|p3
+
+#使用disp.genes开展后续分析
+mycds <- reduceDimension(mycds, max_components = 3, method = 'DDRTree')
+mycds <- orderCells(mycds)
+#State轨迹分布图
+ClusterName_color_panel <- c(
+  "C3_cDC1-Ccl22_LE" = "#A3A500", "C9_cDC1-Ccl22_L" = "#00B0F6", "C4_cDC2-Cd209a_T" = "#6BB100", "C6_cDC2-Itgax_LE" = "#00BF7D","C10_cDC1-Clec9a_TL" = "#619CFF", "C12_cDC1-Ccl22_T" = "#E76BF3", "C14_pDC-Siglech_LT" = "#FF67A4"
+)
+plot1 <- plot_cell_trajectory(mycds, color_by = "subC")+ scale_color_manual(name = "", values = ClusterName_color_panel) +guides(color = guide_legend(override.aes = list(size=5)))
+##Cluster轨迹分布图
+plot2 <- plot_cell_trajectory(mycds, color_by = "sub_Cluster",cell_size=0.5)+ facet_wrap(~experiment+day, nrow = 2) + theme(legend.position = "right")+ scale_color_manual(name = "", values = ClusterName_color_panel) +guides(color = guide_legend(override.aes = list(size=5)))
+##Pseudotime轨迹图
+plot3 <- plot_cell_trajectory(mycds, color_by = "Pseudotime")
+##合并作图
+plot1|plot2|plot3
+##保存结果
+write.csv(pData(HSMM), "pseudotime/pseudotime.csv")
+
+#使用monocle选择的高变基因开展后续分析
+mycds <- reduceDimension(mycds, max_components = 3, method = 'DDRTree')
+mycds <- orderCells(mycds)
+
+##picking genes using dpFeature,调整HSMM_ordering_genes和max_components作图确定参数后
+clustering_DEG_genes <- differentialGeneTest(HSMM,fullModelFormulaStr = '~cluster',cores=2)
+ordering_genes <- row.names (subset(clustering_DEG_genes, qval < 1e-10 )); length(ordering_genes)  #确定有多少差异gene可用，先选择最多保持rds，之后慢慢调整
+HSMM_ordering_genes <- row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:2500]
+HSMM <- setOrderingFilter(HSMM, ordering_genes = HSMM_ordering_genes)
+HSMM <- reduceDimension(HSMM, max_components = 3, method = 'DDRTree')
+HSMM <- orderCells(HSMM)
+#plot_cell_trajectory(HSMM, color_by = "sub_Cluster",cell_size=0.5) + theme(legend.position = "right") +guides(color = guide_legend(override.aes = list(size=5)))
+saveRDS(mycds,"DC.rds")
+saveRDS(HSMM_ordering_genes,"DC_genes_from_monocle.rds")
+
+ClusterName_color_panel <- c(
+  "C0_Mono-Ly6c2_T" = "#F8766D", "C1_Macro-Ccl12_T" = "#E58700", "C2_Mono-Nr4a1_TE" = "#C99800", "C5_Macro-likeNK_T" = "#00BA38","C7_Macro-Arg1_T" = "#00C0AF", "C13_Macro-Lyz1_L" = "#FD61D1"
+)
+pdf(file="DC2.pdf",width=7.3, height=5.3)
+plot_cell_trajectory(HSMM, color_by = "subC",cell_size=0.5) + theme(legend.position = "top")+ scale_color_manual(name = "", values = ClusterName_color_panel) +guides(color = guide_legend(override.aes = list(size=5)))
+dev.off()
+
+ClusterName_color_panel <- c("C0_Mono-Ly6c2_T" = "#F9847A", "C2_Mono-Nr4a1_TE" = "#CEA219",
+                             "C3_cDC1-Ccl22_LE" = "#A3A500", "C9_cDC1-Ccl22_L" = "#00B0F6", "C4_cDC2-Cd209a_T" = "#6BB100", "C6_cDC2-Itgax_LE" = "#00BF7D","C10_cDC1-Clec9a_TL" = "#619CFF", "C12_cDC1-Ccl22_T" = "#E76BF3", "C14_pDC-Siglech_LT" = "#FF67A4"
+)
+ClusterName_color_panel <- c(
+  "normal" = "#A3A500", "tumor" = "#00B0F6", "tumorlike" = "#F9847A")
+
+plot_cell_trajectory(HSMM, color_by = "subC",cell_size=0.5)+ facet_wrap(~experiment+day, nrow = 1) + theme(legend.position = "right")+ scale_color_manual(name = "", values = ClusterName_color_panel) +guides(color = guide_legend(override.aes = list(size=5)))
+plot_cell_trajectory(HSMM, color_by = "sub_Cluster",cell_size=0.5)+ facet_wrap(~experiment, nrow = 1) + theme(legend.position = "right")+ scale_color_manual(name = "", values = ClusterName_color_panel) +guides(color = guide_legend(override.aes = list(size=5)))
+plot_cell_trajectory(HSMM, color_by = "seurat_clusters",cell_size=0.5)+ facet_wrap(~tissue, nrow = 1)
+plot_cell_trajectory(HSMM, color_by = "cnv_status",cell_size=0.5)
+plot_cell_trajectory(HSMM, color_by = "tissue",cell_size=0.5)
+
+HSMM <- readRDS("macro_monocle_dfFeature.rds")
+HSMM_ordering_genes <- readRDS("macro_genes_from_monocle.rds")
+#pData(HSMM)$Pseudotime <- max(pData(HSMM)$Pseudotime) - pData(HSMM)$Pseudotime
+#plot_cell_trajectory(HSMM, color_by = "Pseudotime")+theme_classic(base_size = 14)
+
+df <- pData(HSMM)
+
+pdf(file="desity_y.pdf",width=7.3, height=5.3)
+ggplot(df, aes(Pseudotime, colour = sub_Cluster, fill=sub_Cluster)) +
+  geom_density(bw=0.8,size=1,alpha = 0.6)+theme_classic(base_size = 14) + scale_fill_manual(name = "", values = ClusterName_color_panel)+scale_color_manual(name = "", values = ClusterName_color_panel)
+dev.off()
+
+diff_test_res <- differentialGeneTest(mycds,
+                                      fullModelFormulaStr = "~sm.ns(Pseudotime)")
+#sig_gene_names <- row.names(subset(diff_test_res, qval < 0.001))
+
+diff_test_res$gene <- rownames(diff_test_res)
+sig_gene <- diff_test_res %>%  top_n(n = 100, wt = -qval)
+sig_gene_names <- sig_gene$gene
+
+
+sig_gene_names <- c("Klf2","Cd300a","Rasgrp2","Ace" ,"Ear2", "Add3", "Serpinb2", "Xcl1","Tnfrsf9","Gimap4","Gimap6","Gimap5","Gimap3","Klrb1c","Klre1","Klrd1")
+pdf("Monocle_Gene_mono2.pdf",width=4.79,height=3)
+plot_pseudotime_heatmap(HSMM[sig_gene_names,],
+                        num_clusters = 2,
+                        cores = 1,
+                        show_rownames = TRUE)
+dev.off()
+p=plot_pseudotime_heatmap(HSMM[sig_gene_names,],
+                          num_clusters = 2,
+                          cores = 1,
+                          return_heatmap=TRUE,
+                          show_rownames = TRUE)
+clusters <- cutree(p$tree_row, k = 2)
+clustering <- data.frame(clusters)
+clustering[,1] <- as.character(clustering[,1])
+colnames(clustering) <- "Gene_Clusters"
+table(clustering)
+clustering$gene=rownames(clustering)
+clustering$patterns<- case_when(clustering$Gene_Clusters == "1"~ 'up',
+                                clustering$Gene_Clusters == "2"~ 'down')
+clustering <- clustering[,2:3]
+diff_test_res <- merge(diff_test_res,clustering,all.y=TRUE)
+diff_test_res <- diff_test_res[,-6]
+write.table(diff_test_res,file="DE_pseudotime_DC.xls",sep="\t",row.names=F,quote=F)
