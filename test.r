@@ -295,9 +295,6 @@ head(merged_obj)
 table(merged_obj$celltype)
 table(merged_obj$dataset)
 
-
-
-
 meta <- merged_obj@meta.data
 exp <- merged_obj@assays$RNA@data
 ## downsample
@@ -340,14 +337,13 @@ patch_project2MST <- function() {
     assignInNamespace("project2MST", f, ns = "monocle")
     message("已修补 monocle::project2MST()。")
   } else {
-    message("未找到需要替换的那一行，可能当前版本已无需补丁。")
+    message("未找到需要替换的部分，已修复。")
   }
 }
 
 patch_project2MST()
 
 ##使用clusters差异表达基因
-
 clustering_DEG_genes <- differentialGeneTest(HSMM, fullModelFormulaStr = '~celltype', cores = 1)
 
 HSMM_ordering_genes <- row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:800]
