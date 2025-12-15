@@ -456,7 +456,68 @@ Test_similarity <- glm.predict(
 
 heatmap_mat = t(Test_similarity2$heatmap@matrix)
 
-pdf("1.Similarity_cell_type.pdf", width=18, height=5, onefile = F)
+pdf("2.Similarity_this_work.pdf", width=11, height=18, onefile = F)
+pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
+                   color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
+                   cluster_rows = F)
+dev.off()
+
+### 2) pub1 ----
+sub_obj <- pub1
+DefaultAssay(sub_obj) <- "RNA"
+sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
+sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+sub_obj <- ScaleData(sub_obj, features = VariableFeatures(sub_obj), verbose = FALSE)
+sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
+
+sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
+
+sub_obj <- FindClusters(sub_obj, resolution = 1.5, verbose = FALSE)
+table(sub_obj$seurat_clusters)
+
+#### b. test data ----
+test <- sub_obj
+Idents(test) <- "seurat_clusters"
+
+common_genes <- intersect(rownames(train), rownames(test))
+print(paste("Common genes found:", length(common_genes)))
+
+train_sparse <- GetAssayData(train_sub, assay = "RNA", layer = "data")[common_genes, ]
+test_sparse <- GetAssayData(test,  assay = "RNA", layer = "data")[common_genes, ]
+
+train_mat <- as.matrix(train_sparse)
+test_mat <- as.matrix(test_sparse)
+
+rm(train_sparse, test_sparse)
+gc()
+
+train_group <- as.character(train_sub$cell_type)
+test_group  <- as.character(test$seurat_clusters)
+
+table(is.na(train_group))
+
+if (ncol(train_mat) != length(train_group)) stop("Train 维度不匹配！")
+if (ncol(test_mat)  != length(test_group))  stop("Test 维度不匹配！")
+
+#### c. calculate ----
+source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
+
+Test_similarity <- glm.predict(
+  train.data = train_mat,     
+  train.group = train_group,
+  genes.used = common_genes,
+  downsample = FALSE,
+  sample.cells = 0,
+  test.data = test_mat,
+  test.group = test_group,
+  alpha = 0.5, 
+  nfolds = 5,
+  seed = 123
+)
+
+heatmap_mat = t(Test_similarity2$heatmap@matrix)
+
+pdf("2.Similarity_BPSC_EM.pdf", width=11, height=18, onefile = F)
 pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
                    color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
                    cluster_rows = F)
