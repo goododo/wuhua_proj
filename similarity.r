@@ -336,9 +336,9 @@ Test_similarity <- glm.predict(
   seed = 123
 )
 
-heatmap_mat = t(Test_similarity2$heatmap@matrix)
+heatmap_mat = Test_similarity$heatmap@matrix
 
-pdf("1.Similarity_cell_type.pdf", width=18, height=5, onefile = F)
+pdf("1.Similarity_cell_type.pdf", width=10, height=18, onefile = F)
 pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
                    color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
                    cluster_rows = F)
