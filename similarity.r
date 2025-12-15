@@ -300,6 +300,15 @@ subset_by_group <- function(obj, group.by = "cell_type", n = 200, seed = 2025) {
 train_sub <- subset_by_group(train, group.by = "cell_type", n = 200)
 test_sub <- subset_by_group(test,  group.by = "cell_type", n = 200)
 
+
+subset(train_sub, cell_type == "Cardiopharyngeal Mesoderm")
+
+GetAssayData(subset(train_sub, cell_type == "Cardiopharyngeal Mesoderm"), assay = "RNA", layer = "data")[common_genes, ]%>%
+.[1:50,1:10]
+
+
+
+
 print(table(train_sub$cell_type))
 print(table(test_sub$cell_type))
 
@@ -327,7 +336,7 @@ Test_similarity <- glm.predict(
   train.data = train_mat,     
   train.group = train_group,
   genes.used = common_genes,
-  downsample = TRUE,
+  downsample = FALSE,
   sample.cells = 0,
   test.data = test_mat,
   test.group = test_group,
@@ -343,6 +352,11 @@ pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
                    color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
                    cluster_rows = F)
 dev.off()
+
+write.csv(heatmap_mat, "1.Similarity_cell_type.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "1.Similarity_cell_type.RData")
+
 
 # 2. Combined query data ----
 comb <- readRDS("/home/lushi02/project/wuhua/Combined_query_data.RDS")
