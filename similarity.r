@@ -18,11 +18,14 @@ suppressPackageStartupMessages({
   library(RColorBrewer)
   library(glmnet)
   library(ComplexHeatmap)
+  library(readxl)
 })
 
 source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
 
 # 1. Combined Ref v.s. Celltype devided Query ----
+anno <- read_excel("new annotation.xlsx", sheet = 1)
+
 ## 1) reference ----
 ref_1 <- readRDS("/home/lushi02/project/wuhua/mouse_atlas_gottgens_stelzer.rds")
 ref_1 <- subset(ref_1, subset = !is.na(cell_type))
@@ -81,6 +84,18 @@ table(merged_ref$cell_type)
 Idents(merged_ref) <- merged_ref$cell_type
 
 length(unique(Idents(merged_ref)))
+
+## refine cell_type according new anno
+merged_ref$cell_type <- as.character(merged_ref$cell_type)
+anno_valid <- anno[!is.na(anno$`统一后的名称`), ]
+
+name_map <- setNames(anno_valid$`统一后的名称`, anno_valid$`对应行原名称需重新命名为`)
+
+cells_to_change <- merged_ref$cell_type %in% names(name_map)
+merged_ref$cell_type[cells_to_change] <- name_map[merged_ref$cell_type[cells_to_change]]
+
+head(merged_ref$cell_type)
+table(merged_ref$cell_type)
 
 ## 2) query data ----
 ciToti10 <- readRDS("/home/lushi02/project/wuhua/Annotated/ciToti10.RDS")
@@ -172,21 +187,21 @@ D_E85 <- RenameIdents(D_E85, "0" = "Mixed","1"="Aminion","2"="Neuroectoderm","3"
 
 ## Idents 赋值给 celltype
 ciToti4$cell_type <- Idents(ciToti4)
-head(ciToti4)
+#head(ciToti4)
 ciToti7$cell_type <- Idents(ciToti7)
-head(ciToti7)
+#head(ciToti7)
 ciToti8$cell_type <- Idents(ciToti8)
-head(ciToti8)
+#head(ciToti8)
 ciToti10$cell_type <- Idents(ciToti10)
-head(ciToti10)
+#head(ciToti10)
 D_E35$cell_type <- Idents(D_E35)
-head(D_E35)
+#head(D_E35)
 D_E65$cell_type <- Idents(D_E65)
-head(D_E65)
+#head(D_E65)
 D_E75$cell_type <- Idents(D_E75)
-head(D_E75)
+#head(D_E75)
 D_E85$cell_type <- Idents(D_E85)
-head(D_E85)
+#head(D_E85)
 
 ## 添加一列 Dataset
 ciToti4$dataset <- "ciToti4"
@@ -260,6 +275,18 @@ merged_query <- merge(x = ciToti10,
                                        "E35", "E65", "E75", "E85"))
 merged_query <- JoinLayers(merged_query)
 
+## refine anno
+merged_query$cell_type <- as.character(merged_query$cell_type)
+
+anno_valid <- anno[!is.na(anno$`统一后的名称`), ]
+name_map <- setNames(anno_valid$`统一后的名称`, anno_valid$`对应行原名称需重新命名为`)
+
+cells_to_change <- merged_query$cell_type %in% names(name_map)
+merged_query$cell_type[cells_to_change] <- name_map[merged_query$cell_type[cells_to_change]]
+
+head(merged_query$cell_type)
+table(merged_query$cell_type)
+
 ## 3) Similarity ----
 RhpcBLASctl::blas_set_num_threads(10)
 
@@ -299,15 +326,6 @@ subset_by_group <- function(obj, group.by = "cell_type", n = 200, seed = 2025) {
 
 train_sub <- subset_by_group(train, group.by = "cell_type", n = 200)
 test_sub <- subset_by_group(test,  group.by = "cell_type", n = 200)
-
-
-subset(train_sub, cell_type == "Cardiopharyngeal Mesoderm")
-
-GetAssayData(subset(train_sub, cell_type == "Cardiopharyngeal Mesoderm"), assay = "RNA", layer = "data")[common_genes, ]%>%
-.[1:50,1:10]
-
-
-
 
 print(table(train_sub$cell_type))
 print(table(test_sub$cell_type))
@@ -356,7 +374,6 @@ dev.off()
 write.csv(heatmap_mat, "1.Similarity_cell_type.csv", quote = FALSE, row.names = TRUE)
 save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
      file = "1.Similarity_cell_type.RData")
-
 
 # 2. Combined query data ----
 comb <- readRDS("/home/lushi02/project/wuhua/Combined_query_data.RDS")
@@ -454,13 +471,17 @@ Test_similarity <- glm.predict(
   seed = 123
 )
 
-heatmap_mat = t(Test_similarity2$heatmap@matrix)
+heatmap_mat = t(Test_similarity$heatmap@matrix)
 
 pdf("2.Similarity_this_work.pdf", width=11, height=18, onefile = F)
 pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
                    color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
                    cluster_rows = F)
 dev.off()
+
+write.csv(heatmap_mat, "2.Similarity_this_work.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_this_work.RData")
 
 ### 2) pub1 ----
 sub_obj <- pub1
@@ -515,7 +536,7 @@ Test_similarity <- glm.predict(
   seed = 123
 )
 
-heatmap_mat = t(Test_similarity2$heatmap@matrix)
+heatmap_mat = Test_similarity$heatmap@matrix
 
 pdf("2.Similarity_BPSC_EM.pdf", width=11, height=18, onefile = F)
 pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
@@ -523,7 +544,550 @@ pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
                    cluster_rows = F)
 dev.off()
 
+write.csv(heatmap_mat, "2.Similarity_BPSC_EM.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_BPSC_EM.RData")
 
+### 3) pub2 ----
+sub_obj <- pub2
+DefaultAssay(sub_obj) <- "RNA"
+sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
+sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+sub_obj <- ScaleData(sub_obj, features = VariableFeatures(sub_obj), verbose = FALSE)
+sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
+
+sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
+
+sub_obj <- FindClusters(sub_obj, resolution = 0.4, verbose = FALSE)
+table(sub_obj$seurat_clusters)
+
+#### b. test data ----
+test <- sub_obj
+Idents(test) <- "seurat_clusters"
+
+common_genes <- intersect(rownames(train), rownames(test))
+print(paste("Common genes found:", length(common_genes)))
+
+train_sparse <- GetAssayData(train_sub, assay = "RNA", layer = "data")[common_genes, ]
+test_sparse <- GetAssayData(test,  assay = "RNA", layer = "data")[common_genes, ]
+
+train_mat <- as.matrix(train_sparse)
+test_mat <- as.matrix(test_sparse)
+
+rm(train_sparse, test_sparse)
+gc()
+
+train_group <- as.character(train_sub$cell_type)
+test_group  <- as.character(test$seurat_clusters)
+
+table(is.na(train_group))
+
+if (ncol(train_mat) != length(train_group)) stop("Train 维度不匹配！")
+if (ncol(test_mat)  != length(test_group))  stop("Test 维度不匹配！")
+
+#### c. calculate ----
+source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
+
+Test_similarity <- glm.predict(
+  train.data = train_mat,     
+  train.group = train_group,
+  genes.used = common_genes,
+  downsample = FALSE,
+  sample.cells = 0,
+  test.data = test_mat,
+  test.group = test_group,
+  alpha = 0.5, 
+  nfolds = 5,
+  seed = 123
+)
+
+heatmap_mat = Test_similarity$heatmap@matrix
+
+pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
+                   color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
+                   cluster_rows = F)
+dev.off()
+
+write.csv(heatmap_mat, "2.Similarity_EPSC_EM.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_EPSC_EM.RData")
+
+
+### 4) pub3 ----
+sub_obj <- pub3
+DefaultAssay(sub_obj) <- "RNA"
+sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
+sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+sub_obj <- ScaleData(sub_obj, features = VariableFeatures(sub_obj), verbose = FALSE)
+sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
+
+sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
+
+sub_obj <- FindClusters(sub_obj, resolution = 1.8, verbose = FALSE)
+table(sub_obj$seurat_clusters)
+
+#### b. test data ----
+test <- sub_obj
+Idents(test) <- "seurat_clusters"
+
+common_genes <- intersect(rownames(train), rownames(test))
+print(paste("Common genes found:", length(common_genes)))
+
+train_sparse <- GetAssayData(train_sub, assay = "RNA", layer = "data")[common_genes, ]
+test_sparse <- GetAssayData(test,  assay = "RNA", layer = "data")[common_genes, ]
+
+train_mat <- as.matrix(train_sparse)
+test_mat <- as.matrix(test_sparse)
+
+rm(train_sparse, test_sparse)
+gc()
+
+train_group <- as.character(train_sub$cell_type)
+test_group  <- as.character(test$seurat_clusters)
+
+table(is.na(train_group))
+
+if (ncol(train_mat) != length(train_group)) stop("Train 维度不匹配！")
+if (ncol(test_mat)  != length(test_group))  stop("Test 维度不匹配！")
+
+#### c. calculate ----
+source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
+
+Test_similarity <- glm.predict(
+  train.data = train_mat,     
+  train.group = train_group,
+  genes.used = common_genes,
+  downsample = FALSE,
+  sample.cells = 0,
+  test.data = test_mat,
+  test.group = test_group,
+  alpha = 0.5, 
+  nfolds = 5,
+  seed = 123
+)
+
+heatmap_mat = Test_similarity$heatmap@matrix
+
+pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
+                   color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
+                   cluster_rows = F)
+dev.off()
+
+write.csv(heatmap_mat, "2.Similarity_Zernicka-Goetz_2019.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_Zernicka-Goetz_2019.RData")
+
+
+
+
+### 5) pub4 ----
+sub_obj <- pub4
+DefaultAssay(sub_obj) <- "RNA"
+sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
+sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+sub_obj <- ScaleData(sub_obj, features = VariableFeatures(sub_obj), verbose = FALSE)
+sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
+
+sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
+
+sub_obj <- FindClusters(sub_obj, resolution = 0.8, verbose = FALSE)
+table(sub_obj$seurat_clusters)
+
+#### b. test data ----
+test <- sub_obj
+Idents(test) <- "seurat_clusters"
+
+common_genes <- intersect(rownames(train), rownames(test))
+print(paste("Common genes found:", length(common_genes)))
+
+train_sparse <- GetAssayData(train_sub, assay = "RNA", layer = "data")[common_genes, ]
+test_sparse <- GetAssayData(test,  assay = "RNA", layer = "data")[common_genes, ]
+
+train_mat <- as.matrix(train_sparse)
+test_mat <- as.matrix(test_sparse)
+
+rm(train_sparse, test_sparse)
+gc()
+
+train_group <- as.character(train_sub$cell_type)
+test_group  <- as.character(test$seurat_clusters)
+
+table(is.na(train_group))
+
+if (ncol(train_mat) != length(train_group)) stop("Train 维度不匹配！")
+if (ncol(test_mat)  != length(test_group))  stop("Test 维度不匹配！")
+
+#### c. calculate ----
+source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
+
+Test_similarity <- glm.predict(
+  train.data = train_mat,     
+  train.group = train_group,
+  genes.used = common_genes,
+  downsample = FALSE,
+  sample.cells = 0,
+  test.data = test_mat,
+  test.group = test_group,
+  alpha = 0.5, 
+  nfolds = 5,
+  seed = 123
+)
+
+heatmap_mat = Test_similarity$heatmap@matrix
+
+pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
+                   color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
+                   cluster_rows = F)
+dev.off()
+
+write.csv(heatmap_mat, "2.Similarity_Zernicka_2022_ETiX.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_Zernicka_2022_ETiX.RData")
+
+
+
+
+### 6) pub5 ----
+sub_obj <- pub5
+DefaultAssay(sub_obj) <- "RNA"
+sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
+sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+sub_obj <- ScaleData(sub_obj, features = VariableFeatures(sub_obj), verbose = FALSE)
+sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
+
+sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
+
+sub_obj <- FindClusters(sub_obj, resolution = 0.8, verbose = FALSE)
+table(sub_obj$seurat_clusters)
+
+#### b. test data ----
+test <- sub_obj
+Idents(test) <- "seurat_clusters"
+
+common_genes <- intersect(rownames(train), rownames(test))
+print(paste("Common genes found:", length(common_genes)))
+
+train_sparse <- GetAssayData(train_sub, assay = "RNA", layer = "data")[common_genes, ]
+test_sparse <- GetAssayData(test,  assay = "RNA", layer = "data")[common_genes, ]
+
+train_mat <- as.matrix(train_sparse)
+test_mat <- as.matrix(test_sparse)
+
+rm(train_sparse, test_sparse)
+gc()
+
+train_group <- as.character(train_sub$cell_type)
+test_group  <- as.character(test$seurat_clusters)
+
+table(is.na(train_group))
+
+if (ncol(train_mat) != length(train_group)) stop("Train 维度不匹配！")
+if (ncol(test_mat)  != length(test_group))  stop("Test 维度不匹配！")
+
+#### c. calculate ----
+source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
+
+Test_similarity <- glm.predict(
+  train.data = train_mat,     
+  train.group = train_group,
+  genes.used = common_genes,
+  downsample = FALSE,
+  sample.cells = 0,
+  test.data = test_mat,
+  test.group = test_group,
+  alpha = 0.5, 
+  nfolds = 5,
+  seed = 123
+)
+
+heatmap_mat = Test_similarity$heatmap@matrix
+
+pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
+                   color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
+                   cluster_rows = F)
+dev.off()
+
+write.csv(heatmap_mat, "2.Similarity_H_2022_EM_Hanna.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_H_2022_EM_Hanna.RData")
+
+
+
+
+
+### 7) pub6 ----
+sub_obj <- pub5
+DefaultAssay(sub_obj) <- "RNA"
+sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
+sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+sub_obj <- ScaleData(sub_obj, features = VariableFeatures(sub_obj), verbose = FALSE)
+sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
+
+sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
+
+sub_obj <- FindClusters(sub_obj, resolution = 0.8, verbose = FALSE)
+table(sub_obj$seurat_clusters)
+
+#### b. test data ----
+test <- sub_obj
+Idents(test) <- "seurat_clusters"
+
+common_genes <- intersect(rownames(train), rownames(test))
+print(paste("Common genes found:", length(common_genes)))
+
+train_sparse <- GetAssayData(train_sub, assay = "RNA", layer = "data")[common_genes, ]
+test_sparse <- GetAssayData(test,  assay = "RNA", layer = "data")[common_genes, ]
+
+train_mat <- as.matrix(train_sparse)
+test_mat <- as.matrix(test_sparse)
+
+rm(train_sparse, test_sparse)
+gc()
+
+train_group <- as.character(train_sub$cell_type)
+test_group  <- as.character(test$seurat_clusters)
+
+table(is.na(train_group))
+
+if (ncol(train_mat) != length(train_group)) stop("Train 维度不匹配！")
+if (ncol(test_mat)  != length(test_group))  stop("Test 维度不匹配！")
+
+#### c. calculate ----
+source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
+
+Test_similarity <- glm.predict(
+  train.data = train_mat,     
+  train.group = train_group,
+  genes.used = common_genes,
+  downsample = FALSE,
+  sample.cells = 0,
+  test.data = test_mat,
+  test.group = test_group,
+  alpha = 0.5, 
+  nfolds = 5,
+  seed = 123
+)
+
+heatmap_mat = Test_similarity$heatmap@matrix
+
+pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
+                   color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
+                   cluster_rows = F)
+dev.off()
+
+write.csv(heatmap_mat, "2.Similarity_Hanna_2025_TF_SEM.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_Hanna_2025_TF_SEM.RData")
+
+
+
+
+### 8) pub7 ----
+sub_obj <- pub5
+DefaultAssay(sub_obj) <- "RNA"
+sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
+sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+sub_obj <- ScaleData(sub_obj, features = VariableFeatures(sub_obj), verbose = FALSE)
+sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
+
+sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
+
+sub_obj <- FindClusters(sub_obj, resolution = 0.8, verbose = FALSE)
+table(sub_obj$seurat_clusters)
+
+#### b. test data ----
+test <- sub_obj
+Idents(test) <- "seurat_clusters"
+
+common_genes <- intersect(rownames(train), rownames(test))
+print(paste("Common genes found:", length(common_genes)))
+
+train_sparse <- GetAssayData(train_sub, assay = "RNA", layer = "data")[common_genes, ]
+test_sparse <- GetAssayData(test,  assay = "RNA", layer = "data")[common_genes, ]
+
+train_mat <- as.matrix(train_sparse)
+test_mat <- as.matrix(test_sparse)
+
+rm(train_sparse, test_sparse)
+gc()
+
+train_group <- as.character(train_sub$cell_type)
+test_group  <- as.character(test$seurat_clusters)
+
+table(is.na(train_group))
+
+if (ncol(train_mat) != length(train_group)) stop("Train 维度不匹配！")
+if (ncol(test_mat)  != length(test_group))  stop("Test 维度不匹配！")
+
+#### c. calculate ----
+source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
+
+Test_similarity <- glm.predict(
+  train.data = train_mat,     
+  train.group = train_group,
+  genes.used = common_genes,
+  downsample = FALSE,
+  sample.cells = 0,
+  test.data = test_mat,
+  test.group = test_group,
+  alpha = 0.5, 
+  nfolds = 5,
+  seed = 123
+)
+
+heatmap_mat = Test_similarity$heatmap@matrix
+
+pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
+                   color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
+                   cluster_rows = F)
+dev.off()
+
+write.csv(heatmap_mat, "2.Similarity_Weissman_2019.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_Weissman_2019.RData")
+
+
+
+
+
+### 9) pub8 ----
+sub_obj <- pub5
+DefaultAssay(sub_obj) <- "RNA"
+sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
+sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+sub_obj <- ScaleData(sub_obj, features = VariableFeatures(sub_obj), verbose = FALSE)
+sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
+
+sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
+
+sub_obj <- FindClusters(sub_obj, resolution = 0.8, verbose = FALSE)
+table(sub_obj$seurat_clusters)
+
+#### b. test data ----
+test <- sub_obj
+Idents(test) <- "seurat_clusters"
+
+common_genes <- intersect(rownames(train), rownames(test))
+print(paste("Common genes found:", length(common_genes)))
+
+train_sparse <- GetAssayData(train_sub, assay = "RNA", layer = "data")[common_genes, ]
+test_sparse <- GetAssayData(test,  assay = "RNA", layer = "data")[common_genes, ]
+
+train_mat <- as.matrix(train_sparse)
+test_mat <- as.matrix(test_sparse)
+
+rm(train_sparse, test_sparse)
+gc()
+
+train_group <- as.character(train_sub$cell_type)
+test_group  <- as.character(test$seurat_clusters)
+
+table(is.na(train_group))
+
+if (ncol(train_mat) != length(train_group)) stop("Train 维度不匹配！")
+if (ncol(test_mat)  != length(test_group))  stop("Test 维度不匹配！")
+
+#### c. calculate ----
+source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
+
+Test_similarity <- glm.predict(
+  train.data = train_mat,     
+  train.group = train_group,
+  genes.used = common_genes,
+  downsample = FALSE,
+  sample.cells = 0,
+  test.data = test_mat,
+  test.group = test_group,
+  alpha = 0.5, 
+  nfolds = 5,
+  seed = 123
+)
+
+heatmap_mat = Test_similarity$heatmap@matrix
+
+pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
+                   color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
+                   cluster_rows = F)
+dev.off()
+
+write.csv(heatmap_mat, "2.Similarity_Izpisua_Belmonte_2019.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_Izpisua_Belmonte_2019.RData")
+
+
+
+
+### 10) pub9 ----
+sub_obj <- pub5
+DefaultAssay(sub_obj) <- "RNA"
+sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
+sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+sub_obj <- ScaleData(sub_obj, features = VariableFeatures(sub_obj), verbose = FALSE)
+sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
+
+sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
+
+sub_obj <- FindClusters(sub_obj, resolution = 0.8, verbose = FALSE)
+table(sub_obj$seurat_clusters)
+
+#### b. test data ----
+test <- sub_obj
+Idents(test) <- "seurat_clusters"
+
+common_genes <- intersect(rownames(train), rownames(test))
+print(paste("Common genes found:", length(common_genes)))
+
+train_sparse <- GetAssayData(train_sub, assay = "RNA", layer = "data")[common_genes, ]
+test_sparse <- GetAssayData(test,  assay = "RNA", layer = "data")[common_genes, ]
+
+train_mat <- as.matrix(train_sparse)
+test_mat <- as.matrix(test_sparse)
+
+rm(train_sparse, test_sparse)
+gc()
+
+train_group <- as.character(train_sub$cell_type)
+test_group  <- as.character(test$seurat_clusters)
+
+table(is.na(train_group))
+
+if (ncol(train_mat) != length(train_group)) stop("Train 维度不匹配！")
+if (ncol(test_mat)  != length(test_group))  stop("Test 维度不匹配！")
+
+#### c. calculate ----
+source('/home/fengyan02/Project/YYYProject202306/BasicAnalysis/202403/20240304/script/glm.predict.R')
+
+Test_similarity <- glm.predict(
+  train.data = train_mat,     
+  train.group = train_group,
+  genes.used = common_genes,
+  downsample = FALSE,
+  sample.cells = 0,
+  test.data = test_mat,
+  test.group = test_group,
+  alpha = 0.5, 
+  nfolds = 5,
+  seed = 123
+)
+
+heatmap_mat = Test_similarity$heatmap@matrix
+
+pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
+                   color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
+                   cluster_rows = F)
+dev.off()
+
+write.csv(heatmap_mat, "2.Similarity_iEFC_EM.csv", quote = FALSE, row.names = TRUE)
+save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
+     file = "2.Similarity_iEFC_EM.RData")
 
 
 
