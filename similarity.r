@@ -471,7 +471,7 @@ Test_similarity <- glm.predict(
   seed = 123
 )
 
-heatmap_mat = t(Test_similarity$heatmap@matrix)
+heatmap_mat = Test_similarity$heatmap@matrix
 
 pdf("2.Similarity_this_work.pdf", width=11, height=18, onefile = F)
 pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
@@ -669,7 +669,7 @@ Test_similarity <- glm.predict(
 
 heatmap_mat = Test_similarity$heatmap@matrix
 
-pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pdf("2.Similarity_Zernicka-Goetz_2019.pdf", width=6, height=18, onefile = F)
 pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
                    color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
                    cluster_rows = F)
@@ -737,7 +737,7 @@ Test_similarity <- glm.predict(
 
 heatmap_mat = Test_similarity$heatmap@matrix
 
-pdf("2.Similarity_EPSC_EM.pdf", width=11, height=18, onefile = F)
+pdf("2.Similarity_Zernicka_2022_ETiX.pdf", width=11, height=18, onefile = F)
 pheatmap::pheatmap(heatmap_mat, cluster_cols = F,
                    color = colorRampPalette(rev(brewer.pal(9, "Spectral")))(100), 
                    cluster_rows = F)
@@ -760,7 +760,7 @@ sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
 
 sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
 
-sub_obj <- FindClusters(sub_obj, resolution = 0.8, verbose = FALSE)
+sub_obj <- FindClusters(sub_obj, resolution = 0.7, verbose = FALSE)
 table(sub_obj$seurat_clusters)
 
 #### b. test data ----
@@ -820,7 +820,7 @@ save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
 
 
 ### 7) pub6 ----
-sub_obj <- pub5
+sub_obj <- pub6
 DefaultAssay(sub_obj) <- "RNA"
 sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
 sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
@@ -829,7 +829,7 @@ sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
 
 sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
 
-sub_obj <- FindClusters(sub_obj, resolution = 0.8, verbose = FALSE)
+sub_obj <- FindClusters(sub_obj, resolution = 0.7, verbose = FALSE)
 table(sub_obj$seurat_clusters)
 
 #### b. test data ----
@@ -888,7 +888,7 @@ save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
 
 
 ### 8) pub7 ----
-sub_obj <- pub5
+sub_obj <- pub7
 DefaultAssay(sub_obj) <- "RNA"
 sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
 sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
@@ -957,7 +957,7 @@ save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
 
 
 ### 9) pub8 ----
-sub_obj <- pub5
+sub_obj <- pub8
 DefaultAssay(sub_obj) <- "RNA"
 sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
 sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
@@ -966,7 +966,7 @@ sub_obj <- RunPCA(sub_obj, npcs = 30, verbose = FALSE)
 
 sub_obj <- FindNeighbors(sub_obj, dims = 1:20, verbose = FALSE)
 
-sub_obj <- FindClusters(sub_obj, resolution = 0.8, verbose = FALSE)
+sub_obj <- FindClusters(sub_obj, resolution = 2.2, verbose = FALSE)
 table(sub_obj$seurat_clusters)
 
 #### b. test data ----
@@ -1025,7 +1025,7 @@ save(list = c("train_mat", "test_mat", "Test_similarity", "heatmap_mat"),
 
 
 ### 10) pub9 ----
-sub_obj <- pub5
+sub_obj <- pub9
 DefaultAssay(sub_obj) <- "RNA"
 sub_obj <- NormalizeData(sub_obj, verbose = FALSE)
 sub_obj <- FindVariableFeatures(sub_obj, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
