@@ -1,0 +1,274 @@
+# Title: wuhua project analysis
+# Author: Gaozy
+# Time: 2025-12-19
+
+# zygao02@comput172-general_env-R
+# 0. Basic settings ----
+if (dir.exists("/home/zygao02/wuhua_proj/251219/") == F) dir.create("/home/zygao02/wuhua_proj/251219/")
+setwd("/home/zygao02/wuhua_proj/251219/")
+
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(ggplot2)
+  library(patchwork)
+  library(dplyr)
+  library(ggsci)
+  library(scCustomize)
+  library(randomcoloR)
+  library(RColorBrewer)
+  library(glmnet)
+  library(ComplexHeatmap)
+  library(readxl)
+})
+
+## load combined datasets & seperate ----
+comb <- readRDS("/home/lushi02/project/wuhua/Combined_query_data.RDS")
+
+ciToti4 <- subset(comb, orig.ident %in% c("ciToti4"))
+ciToti7 <- subset(comb, orig.ident %in% c("ciToti7"))
+ciToti8 <- subset(comb, orig.ident %in% c("ciToti8"))
+ciToti10 <- subset(comb, orig.ident %in% c("ciToti10"))
+
+BPSCEM_day8 <- subset(comb, orig.ident %in% c("BPSCEM_day8"))
+D_E35 <- subset(comb, orig.ident %in% c("D_E35"))
+D_E45 <- subset(comb, orig.ident %in% c("D_E45"))
+D_E65 <- subset(comb, orig.ident %in% c("D_E65"))
+D_E75 <- subset(comb, orig.ident %in% c("D_E75"))
+D_E85 <- subset(comb, orig.ident %in% c("D_E85"))
+
+EPSC_S4 <- subset(comb, orig.ident %in% c("EPSC_S4"))
+EPSC_S7 <- subset(comb, orig.ident %in% c("EPSC_S7"))
+EPSC_S8 <- subset(comb, orig.ident %in% c("EPSC_S8"))
+
+ETiX5 <- subset(comb, orig.ident %in% c("ETiX5"))
+ETiX6 <- subset(comb, orig.ident %in% c("ETiX6"))
+ETiX8 <- subset(comb, orig.ident %in% c("ETiX8"))
+
+H_E75 <- subset(comb, orig.ident %in% c("H_E75"))
+H_E85 <- subset(comb, orig.ident %in% c("H_E85"))
+Hanna_2022_EM_day8 <- subset(comb, orig.ident %in% c("Hanna_2022_EM_day8"))
+
+I_E35 <- subset(comb, orig.ident %in% c("I_E35"))
+iEFCEM_day6 <- subset(comb, orig.ident %in% c("iEFCEM_day6"))
+iEFCEM_day8 <- subset(comb, orig.ident %in% c("iEFCEM_day8"))
+
+TFSEM_day10 <- subset(comb, orig.ident %in% c("TFSEM_day10"))
+TFSEM_day8 <- subset(comb, orig.ident %in% c("TFSEM_day8"))
+
+W_E65 <- subset(comb, orig.ident %in% c("W_E65"))
+W_E75 <- subset(comb, orig.ident %in% c("W_E75"))
+W_E85 <- subset(comb, orig.ident %in% c("W_E85"))
+
+Z_E45 <- subset(comb, orig.ident %in% c("Z_E45"))
+Z_E65 <- subset(comb, orig.ident %in% c("Z_E65"))
+Z_E75 <- subset(comb, orig.ident %in% c("Z_E75"))
+Z_E85 <- subset(comb, orig.ident %in% c("Z_E85"))
+
+# 1. Group 1 ----
+group1 <- merge(x = ciToti4, 
+                y = c(EPSC_S4, I_E35, Z_E45, D_E35, D_E45),
+                add.cell.ids = c("ciToti4", "EPSC_S4", "I_E35", "Z_E45", "D_E35", "D_E45"))
+
+group1 <- JoinLayers(group1)
+group1 <- NormalizeData(group1)
+group1 <- FindVariableFeatures(group1, selection.method = "vst", nfeatures = 2000)
+group1 <- ScaleData(group1)
+group1 <- RunPCA(group1, features = VariableFeatures(object = group1))
+group1 <- FindNeighbors(group1, dims = 1:30)
+group1 <- FindClusters(group1, resolution = 0.01)
+table(group1$seurat_clusters)
+
+group1 <- RunUMAP(group1, dims = 1:30)
+
+p1 <- DimPlot(group1, 
+              reduction = "umap", 
+              group.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p2 <- DimPlot(group1, 
+              reduction = "umap", 
+              group.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot <- (p1 | p2) + 
+  plot_annotation(
+    title = "UMAP for Group 1",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group1.pdf", plot = combined_plot, width = 12, height = 6)
+
+# 2. Group 2 ----
+group2 <- merge(x = ciToti7, 
+                y = c(ETiX5, W_E65, Z_E65, D_E65),
+                add.cell.ids = c("ciToti7", "ETiX5", "W_E65", "Z_E65", "D_E65"))
+
+group2 <- JoinLayers(group2)
+group2 <- NormalizeData(group2)
+group2 <- FindVariableFeatures(group2, selection.method = "vst", nfeatures = 2000)
+group2 <- ScaleData(group2)
+group2 <- RunPCA(group2, features = VariableFeatures(object = group2))
+group2 <- FindNeighbors(group2, dims = 1:30)
+group2 <- FindClusters(group2, resolution = 0.013)
+table(group2$seurat_clusters)
+
+group2 <- RunUMAP(group2, dims = 1:30)
+
+p1 <- DimPlot(group2, 
+              reduction = "umap", 
+              group.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p2 <- DimPlot(group2, 
+              reduction = "umap", 
+              group.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot <- (p1 | p2) + 
+  plot_annotation(
+    title = "UMAP for Group 2",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group2.pdf", plot = combined_plot, width = 12, height = 6)
+
+
+# 3. Group 3 ----
+group3 <- merge(x = ciToti8, 
+                y = c(EPSC_S7, ETiX6, iEFCEM_day6, TFSEM_day8, H_E75, W_E75, Z_E75, D_E75),
+                add.cell.ids = c("ciToti8", "EPSC_S7", "ETiX6", "iEFCEM_day6", "TFSEM_day8", "H_E75", "W_E75", "Z_E75", "D_E75"))
+
+group3 <- JoinLayers(group3)
+group3 <- NormalizeData(group3)
+group3 <- FindVariableFeatures(group3, selection.method = "vst", nfeatures = 2000)
+group3 <- ScaleData(group3)
+group3 <- RunPCA(group3, features = VariableFeatures(object = group3))
+group3 <- FindNeighbors(group3, dims = 1:30)
+group3 <- FindClusters(group3, resolution = 0.055)
+table(group3$seurat_clusters)
+
+group3 <- RunUMAP(group3, dims = 1:30)
+
+
+p1 <- DimPlot(group3, 
+              reduction = "umap", 
+              group.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p2 <- DimPlot(group3, 
+              reduction = "umap", 
+              group.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot <- (p1 | p2) + 
+  plot_annotation(
+    title = "UMAP for Group 3",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group3.pdf", plot = combined_plot, width = 12, height = 6)
+
+
+
+# 4. Group 4 ----
+group4 <- merge(x = ciToti10, 
+                y = c(BPSCEM_day8, EPSC_S8, ETiX8, Hanna_2022_EM_day8, iEFCEM_day8,
+                      TFSEM_day10, H_E85, W_E85, Z_E85, D_E85),
+                add.cell.ids = c("ciToti10", "BPSCEM_day8", "EPSC_S8", "ETiX8", "Hanna_2022_EM_day8", "iEFCEM_day8",
+                                 "TFSEM_day10", "H_E85", "W_E85", "Z_E85", "D_E85"))
+
+
+group4 <- JoinLayers(group4)
+group4 <- NormalizeData(group4)
+group4 <- FindVariableFeatures(group4, selection.method = "vst", nfeatures = 2000)
+group4 <- ScaleData(group4)
+group4 <- RunPCA(group4, features = VariableFeatures(object = group4))
+group4 <- FindNeighbors(group4, dims = 1:30)
+group4 <- FindClusters(group4, resolution = 0.3)
+table(group4$seurat_clusters)
+
+group4 <- RunUMAP(group4, dims = 1:30)
+
+p1 <- DimPlot(group4, 
+              reduction = "umap", 
+              group.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p2 <- DimPlot(group4, 
+              reduction = "umap", 
+              group.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot <- (p1 | p2) + 
+  plot_annotation(
+    title = "UMAP for Group 4",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group4.pdf", plot = combined_plot, width = 12, height = 6)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
