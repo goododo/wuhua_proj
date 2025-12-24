@@ -119,15 +119,39 @@ combined_plot <- (p1 | p2) +
 
 ggsave("1.UMAP_group1.pdf", plot = combined_plot, width = 12, height = 6)
 
+p3 <- DimPlot(group1, reduction = "umap", split.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p4 <- DimPlot(group1, reduction = "umap", split.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot_split <- (p3 / p4) + 
+  plot_annotation(
+    title = "Split UMAP for Group 1",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group1_split.pdf", plot = combined_plot_split, width = 12, height = 8)
+
 # 2. Group 2 ----
 group2 <- merge(x = ciToti7, 
                 y = c(ETiX5, W_E65, Z_E65, D_E65),
                 add.cell.ids = c("ciToti7", "ETiX5", "W_E65", "Z_E65", "D_E65"))
 
-group2 <- harmony_pipe(group2, reso = 0.02)
-table(group2$seurat_clusters)
-
-group2 <- FindClusters(group2, resolution = 0.04)
+group2 <- harmony_pipe(group2, reso = 0.04)
 table(group2$seurat_clusters)
 
 p1 <- DimPlot(group2, 
@@ -161,6 +185,32 @@ combined_plot <- (p1 | p2) +
 
 ggsave("1.UMAP_group2.pdf", plot = combined_plot, width = 12, height = 6)
 
+p3 <- DimPlot(group2, reduction = "umap", split.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p4 <- DimPlot(group2, reduction = "umap", split.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot_split <- (p3 / p4) + 
+  plot_annotation(
+    title = "Split UMAP for Group 2",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group2_split.pdf", plot = combined_plot_split, width = 12, height = 8)
 
 # 3. Group 3 ----
 group3 <- merge(x = ciToti8, 
@@ -203,6 +253,33 @@ combined_plot <- (p1 | p2) +
     ) )
 
 ggsave("1.UMAP_group3.pdf", plot = combined_plot, width = 12, height = 6)
+
+p3 <- DimPlot(group3, reduction = "umap", split.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p4 <- DimPlot(group3, reduction = "umap", split.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot_split <- (p3 / p4) + 
+  plot_annotation(
+    title = "Split UMAP for Group 3",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group3_split.pdf", plot = combined_plot_split, width = 22, height = 6)
 
 # 4. Group 4 ----
 group4 <- merge(x = ciToti10, 
@@ -247,6 +324,33 @@ combined_plot <- (p1 | p2) +
     ) )
 
 ggsave("1.UMAP_group4.pdf", plot = combined_plot, width = 12, height = 6)
+
+p3 <- DimPlot(group4, reduction = "umap", split.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p4 <- DimPlot(group4, reduction = "umap", split.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot_split <- (p3 / p4) + 
+  plot_annotation(
+    title = "Split UMAP for Group 4",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group4_split.pdf", plot = combined_plot_split, width = 30, height = 6)
 
 # CCA ----
 cca_pipe <- function(seurat_obj_list, reso){
@@ -307,6 +411,32 @@ combined_plot <- (p1 | p2) +
 
 ggsave("1.UMAP_group1_cca.pdf", plot = combined_plot, width = 12, height = 6)
 
+p3 <- DimPlot(group1_cca, reduction = "umap", split.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p4 <- DimPlot(group1_cca, reduction = "umap", split.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot_split <- (p3 / p4) + 
+  plot_annotation(
+    title = "Split UMAP for Group 1",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group1_cca_split.pdf", plot = combined_plot_split, width = 12, height = 10)
 
 # 2. Group 2 ----
 group2_list <- list(ciToti7, ETiX5, W_E65, Z_E65, D_E65)
@@ -347,6 +477,33 @@ combined_plot <- (p1 | p2) +
 
 ggsave("1.UMAP_group2_cca.pdf", plot = combined_plot, width = 12, height = 6)
 
+p3 <- DimPlot(group2_cca, reduction = "umap", split.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p4 <- DimPlot(group2_cca, reduction = "umap", split.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot_split <- (p3 / p4) + 
+  plot_annotation(
+    title = "Split UMAP for Group 2",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group2_cca_split.pdf", plot = combined_plot_split, width = 16, height = 6)
+
 # 3. Group 3 ----
 group3_list <- list(ciToti8, EPSC_S7, ETiX6, iEFCEM_day6, TFSEM_day8, H_E75, W_E75, Z_E75, D_E75)
 group3_cca <- cca_pipe(group3_list, reso = 0.3)
@@ -385,6 +542,33 @@ combined_plot <- (p1 | p2) +
     ) )
 
 ggsave("1.UMAP_group3_cca.pdf", plot = combined_plot, width = 12, height = 6)
+
+p3 <- DimPlot(group3_cca, reduction = "umap", split.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p4 <- DimPlot(group3_cca, reduction = "umap", split.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot_split <- (p3 / p4) + 
+  plot_annotation(
+    title = "Split UMAP for Group 3",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group3_cca_split.pdf", plot = combined_plot_split, width = 22, height = 6)
 
 # 4. Group 4 ----
 group4_list <- list(ciToti10, BPSCEM_day8, EPSC_S8, ETiX8, Hanna_2022_EM_day8, iEFCEM_day8,
@@ -425,6 +609,33 @@ combined_plot <- (p1 | p2) +
     ) )
 
 ggsave("1.UMAP_group4_cca.pdf", plot = combined_plot, width = 12, height = 6)
+
+p3 <- DimPlot(group4_cca, reduction = "umap", split.by = "seurat_clusters",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p4 <- DimPlot(group4_cca, reduction = "umap", split.by = "orig.ident",
+              pt.size = 0.5, 
+              alpha = 0.6,
+              label = TRUE,
+              repel = TRUE,
+              raster = FALSE) +
+  NoAxes() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+combined_plot_split <- (p3 / p4) + 
+  plot_annotation(
+    title = "Split UMAP for Group 4",
+    theme = theme(
+      plot.title = element_text(size = 24, face = "bold", hjust = 0.5)
+    ) )
+
+ggsave("1.UMAP_group4_cca_split.pdf", plot = combined_plot_split, width = 30, height = 6)
 
 
 
