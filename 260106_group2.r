@@ -178,8 +178,12 @@ outdir <- "/home/zygao02/wuhua_proj/260106"
 Ntrain_grid <- c(5800, 5900, 6000, 6100, 6200)
 Ntest_grid  <- c(5900, 6000, 6050, 6100, 6200)
 
-Ntrain_grid <- seq(300, 5000, by = 100)
-Ntest_grid  <- seq(300, 5000, by = 100) 
+Ntrain_grid <- seq(10000, 20000, by = 100)
+Ntest_grid  <- seq(10000, 20000, by = 100) 
+
+Ntrain_grid <- seq(17000, 21000, by = 50)
+Ntest_grid  <- seq(17000, 21000, by = 50) 
+
 
 # 固定其它超参（你也可改）
 alpha_fix       <- 0.99
@@ -266,10 +270,10 @@ for (Ntr in Ntrain_grid) {
 }
 
 rank_df <- bind_rows(rank_tbl) %>% arrange(desc(score))
-write.csv(rank_df, file.path(outdir, "ranked_results_topN_around300-5000.csv"),
+write.csv(rank_df, file.path(outdir, "ranked_results_topN_around17000-21000.csv"),
           row.names = FALSE, quote = FALSE)
 
-cat("\nSaved ranking to:", file.path(outdir, "ranked_results_topN_around300-5000.csv"), "\n")
+cat("\nSaved ranking to:", file.path(outdir, "ranked_results_topN_around17000-21000.csv"), "\n")
 
 ## ---------------------------
 ## 7) Save BEST heatmap + csv + RData
@@ -607,7 +611,6 @@ dev.off()
 
 cat("Saved one-page BIG heatmap to:\n  ", pdf_file, "\n", sep = "")
 cat("Dim(big_mat) = ", nrow(big_mat), " x ", ncol(big_mat), "\n", sep = "")
-
 
 
 
