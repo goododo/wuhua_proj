@@ -184,6 +184,12 @@ Ntest_grid  <- seq(10000, 20000, by = 100)
 Ntrain_grid <- seq(17000, 21000, by = 50)
 Ntest_grid  <- seq(17000, 21000, by = 50) 
 
+Ntrain_grid <- seq(17000, 21000, by = 500)
+Ntest_grid  <- seq(17000, 21000, by = 500) 
+
+Ntrain_grid <- seq(400, 700, by = 20) 
+Ntest_grid  <- seq(400, 700, by = 20) 
+
 
 # 固定其它超参（你也可改）
 alpha_fix       <- 0.99
