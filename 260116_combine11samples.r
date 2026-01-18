@@ -242,7 +242,8 @@ options(stringsAsFactors = FALSE)
 
 library(Hmisc)
 group1_ref <- readRDS("/home/lushi02/project/wuhua/ref/group1ref_E3.5_E4.5.rds")
-sub_regress_harmony <- subset(regress_harmony, orig.ident %nin% c("ciToti1", "ciToti2", "ciToti3"))
+#sub_regress_harmony <- subset(regress_harmony, orig.ident %nin% c("ciToti1", "ciToti2", "ciToti3"))
+group1_new <- readRDS("/home/zygao02/wuhua_proj/260116/group1_new_wh.rds")
 
 ## ---------------------------
 ## 0) glm.predict (your version + maxit)
@@ -358,7 +359,7 @@ train <- group1_ref
 Idents(train) <- "cell_type"
 train.group <- as.character(Idents(train))
 
-test <- sub_regress_harmony
+test <- group1_new
 Idents(test) <- "seurat_clusters"
 test.group <- as.character(Idents(test))
 
@@ -374,7 +375,8 @@ cat("Train types:", length(unique(train.group)), " | Test types:", length(unique
 mat_train <- tryCatch(GetAssayData(train, layer = "data"),
                       error = function(e) GetAssayData(train, slot = "data"))
 
-mat_test <- tryCatch(GetAssayData(test, layer = "data"),
+test <- JoinLayers(test)
+mat_test <- tryCatch(GetAssayData(test, layer = "scale.data"),
                      error = function(e) {GetAssayData(test, slot = "data")
                      })
 
@@ -437,7 +439,7 @@ row_w <- max_text_width(rn, gp = gpar(fontsize = 14)) + unit(8, "mm")
 pdf_w_in <- (ncol(mat_plot) * cell_mm + 140) / 25.4
 pdf_h_in <- (nrow(mat_plot) * cell_mm + 120) / 25.4
 
-pdf("glm_predict_similarity_heatmap.pdf",
+pdf("glm_predict_similarity_heatmap_new_group1_scale.pdf",
     width = pdf_w_in, height = pdf_h_in, useDingbats = FALSE)
 
 ht <- Heatmap(
@@ -483,6 +485,14 @@ dev.off()
 
 saveRDS(regress_harmony, "regress_harmony.rds")
 
+
+group1_new_markers <- FindAllMarkers(test, assay = "RNA",
+                                          layer = "data", group.by = "seurat_clusters")
+
+write.csv(group1_new_markers, "group1_new_markers.csv", quote = F, row.names = T)
+
+
+        
 
 regress_harmony_markers <- FindAllMarkers(regress_harmony, assay = "RNA",
                                           layer = "data", group.by = "seurat_clusters")
