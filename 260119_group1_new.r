@@ -183,8 +183,8 @@ if (dir.exists("/home/zygao02/wuhua_proj/260119/group1_new_noC6_noCiToti1-3") ==
 outdir <- "/home/zygao02/wuhua_proj/260119/group1_new_noC6_noCiToti1-3"
 
 # 只在 6000 左右尝试：你可以把这两个向量改得更窄/更细
-Ntrain_grid <- seq(5000, 20000, by = 200) 
-Ntest_grid  <- seq(5000, 20000, by = 200) 
+Ntrain_grid <- seq(200, 5000, by = 200) 
+Ntest_grid  <- seq(200, 5000, by = 200) 
 
 
 # 固定其它超参（你也可改）
@@ -276,10 +276,10 @@ rank_df <- bind_rows(rank_tbl) %>% arrange(desc(score))
 if (dir.exists("/home/zygao02/wuhua_proj/260119/group1_new_noC6_noCiToti1-3") == F) dir.create("/home/zygao02/wuhua_proj/260119/group1_new_noC6_noCiToti1-3")
 outdir <- "/home/zygao02/wuhua_proj/260119/group1_new_noC6_noCiToti1-3"
 
-write.csv(rank_df, file.path(outdir, "ranked_results_topN_around5000-20000.csv"),
+write.csv(rank_df, file.path(outdir, "ranked_results_topN_around200-5000.csv"),
           row.names = FALSE, quote = FALSE)
 
-cat("\nSaved ranking to:", file.path(outdir, "ranked_results_topN_around5000-20000.csv"), "\n")
+cat("\nSaved ranking to:", file.path(outdir, "ranked_results_topN_around200-5000.csv"), "\n")
 
 ## ---------------------------
 ## 7) Save BEST heatmap + csv + RData
@@ -290,7 +290,7 @@ if (!is.null(best_obj)) {
   
   best_mat <- best_obj$mat_plot
   
-  pdf(file.path(outdir, "BEST_heatmap5000-20000.pdf"),
+  pdf(file.path(outdir, "BEST_heatmap200-5000.pdf"),
       width = 15, height = 8, useDingbats = FALSE)
   
   ht <- Heatmap(
@@ -316,7 +316,7 @@ if (!is.null(best_obj)) {
        padding = unit(c(5, 25, 5, 5), "mm"))
   dev.off()
   
-  write.csv(best_mat, file.path(outdir, "BEST_heatmap5000-20000.csv"),
+  write.csv(best_mat, file.path(outdir, "BEST_heatmap200-5000.csv"),
             row.names = TRUE, quote = FALSE)
   
   save(
@@ -325,7 +325,7 @@ if (!is.null(best_obj)) {
              "sd_train", "sd_test",
              "best_Ntrain", "best_Ntest", "best_score",
              "best_obj", "rank_df"),
-    file = file.path(outdir, "BEST_run.RData")
+    file = file.path(outdir, "BEST_run200-5000.RData")
   )
   
   cat("Saved BEST heatmap/csv/RData to:", outdir, "\n")
@@ -333,10 +333,10 @@ if (!is.null(best_obj)) {
   cat("\nNo successful run found (all failed or too few features).\n")
 }
 
-mat_plot <- as.matrix(read.csv(file.path(outdir, "BEST_heatmap5000-20000.csv"),
+mat_plot <- as.matrix(read.csv(file.path(outdir, "BEST_heatmap200-5000.csv"),
                                row.names = 1, check.names = FALSE))
 
-col_fun <- colorRamp2(c(0, 0.5, 1), c("#e9e9e9", "white", "red"))
+col_fun <- colorRamp2(c(0, 0.4, 1), c("#e9e9e9", "white", "red"))
 
 # ====== 1) 设定每个格子的边长（mm）======
 cell_mm <- 8  # 你可以试 4/5/6；越大越清晰但PDF越大
@@ -355,7 +355,7 @@ row_w <- max_text_width(rn, gp = gpar(fontsize = 14)) + unit(8, "mm")
 pdf_w_in <- (ncol(mat_plot) * cell_mm + 140) / 25.4
 pdf_h_in <- (nrow(mat_plot) * cell_mm + 120) / 25.4
 
-pdf(file.path(outdir, "BEST_heatmap_square.pdf"),
+pdf(file.path(outdir, "BEST_heatmap_square200-5000.pdf"),
     width = pdf_w_in, height = pdf_h_in, useDingbats = FALSE)
 
 ht <- Heatmap(
@@ -394,7 +394,7 @@ draw(
 dev.off()
 
 
-load(file.path(outdir, "BEST_run.RData"))
+load(file.path(outdir, "BEST_run5000-20000.RData"))
 
 # best_obj$res 里应当有 logits / probability（每个细胞一行）
 # 保险起见：把“行顺序”对齐到 test 的细胞（= mat_test 的列名）
@@ -499,7 +499,7 @@ for (s in samples) {
 
 indir  <- file.path(outdir, "by_orig_ident_fromBEST")
 
-load(file.path(outdir, "BEST_run.RData"))
+load(file.path(outdir, "BEST_run5000-20000.RData"))
 ref_ct   <- rownames(best_obj$mat_plot)    # 17
 query_ct <- colnames(best_obj$mat_plot)    # 17
 
@@ -521,7 +521,7 @@ sample_cols <- sample_cols[samples]
 
 # ---- Heatmap color ----
 col_fun <- colorRamp2(
-  c(0, 0.3, 1),
+  c(0, 0.5, 1),
   c("#F2F2F2", "#FFFFFF", "#B2182B")
 )
 
