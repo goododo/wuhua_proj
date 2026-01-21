@@ -183,18 +183,6 @@ if (dir.exists("/home/zygao02/wuhua_proj/260119/group1_new_noC6_noCiToti1-3") ==
 outdir <- "/home/zygao02/wuhua_proj/260119/group1_new_noC6_noCiToti1-3"
 
 # 只在 6000 左右尝试：你可以把这两个向量改得更窄/更细
-Ntrain_grid <- c(5800, 5900, 6000, 6100, 6200)
-Ntest_grid  <- c(5900, 6000, 6050, 6100, 6200)
-
-Ntrain_grid <- seq(10000, 20000, by = 100)
-Ntest_grid  <- seq(10000, 20000, by = 100) 
-
-Ntrain_grid <- seq(17000, 21000, by = 50)
-Ntest_grid  <- seq(17000, 21000, by = 50) 
-
-Ntrain_grid <- seq(17000, 21000, by = 500)
-Ntest_grid  <- seq(17000, 21000, by = 500) 
-
 Ntrain_grid <- seq(5000, 20000, by = 200) 
 Ntest_grid  <- seq(5000, 20000, by = 200) 
 
@@ -345,15 +333,13 @@ if (!is.null(best_obj)) {
   cat("\nNo successful run found (all failed or too few features).\n")
 }
 
-outdir <- "/home/zygao02/wuhua_proj/260106"
-
 mat_plot <- as.matrix(read.csv(file.path(outdir, "BEST_heatmap5000-20000.csv"),
                                row.names = 1, check.names = FALSE))
 
 col_fun <- colorRamp2(c(0, 0.5, 1), c("#e9e9e9", "white", "red"))
 
 # ====== 1) 设定每个格子的边长（mm）======
-cell_mm <- 5  # 你可以试 4/5/6；越大越清晰但PDF越大
+cell_mm <- 8  # 你可以试 4/5/6；越大越清晰但PDF越大
 
 hm_w <- unit(ncol(mat_plot) * cell_mm, "mm")
 hm_h <- unit(nrow(mat_plot) * cell_mm, "mm")
@@ -407,7 +393,7 @@ draw(
 
 dev.off()
 
-outdir <- "glm_topN_around6000_group1"
+
 load(file.path(outdir, "BEST_run.RData"))
 
 # best_obj$res 里应当有 logits / probability（每个细胞一行）
@@ -511,27 +497,23 @@ for (s in samples) {
 #   - move whole plot LEFT a bit (by reducing left padding)
 # =========================
 
-outdir <- "glm_topN_around6000_group1"
 indir  <- file.path(outdir, "by_orig_ident_fromBEST")
 
 load(file.path(outdir, "BEST_run.RData"))
 ref_ct   <- rownames(best_obj$mat_plot)    # 17
 query_ct <- colnames(best_obj$mat_plot)    # 17
 
-samples <- c("ciToti8","D_E75","EPSC_S7","ETiX6","H_E75",
-             "iEFCEM_day6","TFSEM_day8","W_E75","Z_E75")
+samples <- c("ciToti4","D_E35","D_E45","EPS_blastoid","EPSC_S4",
+             "TBLC_blastoid")
 
 # ---- Cell-style muted palette ----
 sample_cols <- c(
-  "ciToti8"       = "#B24745",
-  "D_E75"         = "#6E6E6E",
-  "EPSC_S7"       = "#6A5AA8",
-  "ETiX6"         = "#3B74A7",
-  "H_E75"         = "#2A8C7C",
-  "iEFCEM_day6"   = "#C57B2A",
-  "TFSEM_day8"    = "#B85A9A",
-  "W_E75"         = "#6E9B3A",
-  "Z_E75"         = "#3E3E3E"
+  "ciToti4"       = "#B24745",
+  "D_E35"         = "#6E6E6E",
+  "D_E45"       = "#6A5AA8",
+  "EPS_blastoid"         = "#3B74A7",
+  "EPSC_S4"         = "#2A8C7C",
+  "TBLC_blastoid"   = "#C57B2A"
 )
 miss <- setdiff(samples, names(sample_cols))
 if (length(miss) > 0) sample_cols[miss] <- "#999999"
@@ -539,7 +521,7 @@ sample_cols <- sample_cols[samples]
 
 # ---- Heatmap color ----
 col_fun <- colorRamp2(
-  c(0, 0.5, 1),
+  c(0, 0.3, 1),
   c("#F2F2F2", "#FFFFFF", "#B2182B")
 )
 
@@ -582,11 +564,11 @@ top_ha <- HeatmapAnnotation(
 )
 
 # ---- Size ----
-cell_mm <- 2.2
+cell_mm <- 8
 hm_w <- unit(ncol(big_mat) * cell_mm, "mm")
 hm_h <- unit(nrow(big_mat) * cell_mm, "mm")
 
-pdf_file <- file.path(indir, "ALL_9samples_BIG_onepage_CellStyle.pdf")
+pdf_file <- file.path(indir, "ALL_6samples_BIG_onepage_CellStyle.pdf")
 pdf(pdf_file,
     width  = (ncol(big_mat) * cell_mm + 125) / 25.4,
     height = (nrow(big_mat) * cell_mm + 115) / 25.4,
@@ -616,8 +598,8 @@ ht <- Heatmap(
   
   na_col = "#F0F0F0",
   
-  column_title = "Query: 9 samples × 17 cell types (columns split by orig.ident)",
-  row_title    = "Reference cell types (17)"
+  column_title = "Query: 6 samples × 3 cell types (columns split by orig.ident)",
+  row_title    = "Reference cell types (3)"
 )
 
 draw(
@@ -630,7 +612,6 @@ dev.off()
 
 cat("Saved one-page BIG heatmap to:\n  ", pdf_file, "\n", sep = "")
 cat("Dim(big_mat) = ", nrow(big_mat), " x ", ncol(big_mat), "\n", sep = "")
-
 
 
 
